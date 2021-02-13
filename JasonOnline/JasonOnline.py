@@ -6,16 +6,22 @@ from operator import add
 import keyboard
 
 import math
+import random
 import numpy as np
 
 JasonExe = 'C:\SOURCE\JasonOnline\JasonUCI.exe'
 
-#Chessboard has to be in white point of view!!
+#Chessboard has to be in white point of view!! (for now)
 #Board corners coordinates in chess.com window
-topLeftCorner = [385, 140]
-bottomLeftCorner = [385, 955]
-topRightCorner = [1200, 140]
-bottomRightCorner = [1200, 955]
+topLeftCorner = [270, 140]
+bottomLeftCorner = [270, 970]
+topRightCorner = [1105, 140]
+bottomRightCorner = [1105, 970]
+#Against computer:
+#topLeftCorner = [385, 140]
+#bottomLeftCorner = [385, 955]
+#topRightCorner = [1200, 140]
+#bottomRightCorner = [1200, 955]
 #Square size
 dX = (topRightCorner[0] - topLeftCorner[0]) / 8
 dY = (bottomLeftCorner[1] - topLeftCorner[1]) / 8
@@ -61,6 +67,10 @@ def ColorDistance(color1, color2):
 
 whitePieces = [[1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [7, 1], [8, 1], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2]]
 blackPieces = [[1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8], [1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [7, 7], [8, 7]]
+canWhiteOO = True
+canWhiteOOO = True
+canBlackOO = True
+canBlackOOO = True
 
 def rotate(l, n):
     return l[n:] + l[:n]
@@ -70,7 +80,8 @@ def GetOpponentMove(isJasonWhite):
     s = np.array(screenScreenshot)
 
     moveSquares = []
-    #440, 200 to 475, 160
+    #440, 200 to 475, 160 (against computer)
+    #330, 930 to 365, 890 (against human)
     shift = [35, -40]#shift from center to get color of square and not piece
 
     for i in range(1, 9):
@@ -110,6 +121,18 @@ def GetOpponentMove(isJasonWhite):
 
     return MoveSquaresToMoveString(moveSquares)
 
+def IsWhiteOO(moveString):
+    return ((moveString == "e1g1") and canWhiteOO)
+
+def IsWhiteOOO(moveString):
+    return ((moveString == "e1c1") and canWhiteOOO)
+
+def IsBlackOO(moveString):
+    return ((moveString == "e8g8") and canBlackOO)
+
+def IsBlackOOO(moveString):
+    return ((moveString == "e8c8") and canBlackOOO)
+
 def UpdatePieceLists(moveString):
     [fromSq, toSq] = MoveStringToSquares(moveString)
     if (fromSq in whitePieces):
@@ -123,7 +146,29 @@ def UpdatePieceLists(moveString):
         blackPieces.remove(fromSq)
         blackPieces.append(toSq)
         if (toSq in whitePieces):
-            whitePieces.remove(toSq)        
+            whitePieces.remove(toSq)
+
+    #Rook to update for castles  
+    if IsWhiteOO(moveString):
+        whitePieces.remove([8, 1])
+        whitePieces.append([6, 1])
+    elif IsWhiteOOO(moveString):
+        whitePieces.remove([1, 1])
+        whitePieces.append([4, 1])
+    elif IsBlackOO(moveString):
+        blackPieces.remove([8, 8])
+        blackPieces.append([6, 8])
+    elif IsBlackOOO(moveString):
+        blackPieces.remove([1, 8])
+        blackPieces.append([4, 8])
+
+    #Update castle flags (we dont care about rook captures, we just check if king has moved)
+    if fromSq == [5, 1]:
+        canWhiteOO = False
+        canWhiteOOO = False
+    if fromSq == [5, 8]:
+        canBlackOO = False
+        canBlackOOO = False
 
 def main():
 
@@ -153,7 +198,12 @@ def main():
 
     p = Popen([JasonExe], stdout=PIPE, stdin=PIPE, stderr=PIPE, universal_newlines=True)
 
+    isFirstMove = True;
     while True: #Game loop
+
+        #add random sleep duration for more humanlike behavior
+        if (~isFirstMove):
+            time.sleep(random.randint(2, 5)) 
 
         if keyboard.is_pressed('c') and keyboard.is_pressed('ctrl'):
             break #kill keyboard command
@@ -183,6 +233,8 @@ def main():
             opponentMoveString = GetOpponentMove(isJasonWhite)
         UpdatePieceLists(opponentMoveString)
         moves += opponentMoveString + " "
+
+        isFirstMove = False
 
 
 if __name__ == "__main__":
