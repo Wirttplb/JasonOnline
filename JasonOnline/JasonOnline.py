@@ -29,6 +29,17 @@ dY = (bottomLeftCorner[1] - topLeftCorner[1]) / 8
 highlightLightSquare = [187, 203, 43] #two different moved pieces colors (according to light or dark square)
 highlightDarkSquare = [247, 247, 105]
 greenSquare = [118, 150,  86]
+#To find Jason's color
+topPortrait = [290, 110]
+topPortraitRematch = [330, 110]
+bottomPortrait = [290, 1000]
+bottomPortraitRematch = [330, 1000]
+jasonPortraitColor = [128, 0, 128]
+#Button positions
+newGameButton = [1500, 750]
+#Game ended pop up
+gameEndPopupColor = [255, 255, 255]
+gameEndPopup = [690, 590]
 
 def MoveStringToSquares(moveString):
     fromX = FileLetterToIdx(moveString[0])
@@ -72,6 +83,20 @@ canWhiteOOO = True
 canBlackOO = True
 canBlackOOO = True
 
+def InitBoard():
+    global whitePieces
+    global blackPieces
+    global canWhiteOO
+    global canWhiteOOO
+    global canBlackOO
+    global canBlackOOO
+    whitePieces = [[1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [7, 1], [8, 1], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2]]
+    blackPieces = [[1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8], [1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [7, 7], [8, 7]]
+    canWhiteOO = True
+    canWhiteOOO = True
+    canBlackOO = True
+    canBlackOOO = True
+
 def rotate(l, n):
     return l[n:] + l[:n]
 
@@ -90,13 +115,8 @@ def GetOpponentMove(isJasonWhite):
             [x, y] = GetSquareScreenCoordinates(i, j)
             [x, y] = list(map(add, [x, y], shift))
             color = s[int(y)][int(x)]
-            if (i == 7 and j == 8):
-                eheh = ""
-            if (i == 6 and j == 6):
-                eheh = ""
-
-            dRGB2 = min(ColorDistance(color, highlightLightSquare), ColorDistance(color, highlightDarkSquare))
-            if (dRGB2 < 5.0):
+            dRGB = min(ColorDistance(color, highlightLightSquare), ColorDistance(color, highlightDarkSquare))
+            if (dRGB < 10.0):
                 moveSquares.append([i,j])
             if (len(moveSquares) == 2):
                 break
@@ -108,7 +128,7 @@ def GetOpponentMove(isJasonWhite):
         return "" #opponent has not played yet
 
     if (len(moveSquares) != 2):
-        raise SystemExit('Invalid mode read!')
+        return "" #page still refreshing?   ###raise SystemExit('Invalid mode read!')
 
     friendlyPieces = whitePieces
     if isJasonWhite:
@@ -170,7 +190,23 @@ def UpdatePieceLists(moveString):
         canBlackOO = False
         canBlackOOO = False
 
-def main():
+
+def GetJasonColor(): #return True for white
+    screenScreenshot = pyautogui.screenshot()
+    s = np.array(screenScreenshot)
+    bottomColor = s[bottomPortrait[1]][bottomPortrait[0]]
+    bottomColorRematch = s[bottomPortraitRematch[1]][bottomPortraitRematch[0]]
+    dRGB = min(ColorDistance(bottomColor, jasonPortraitColor), ColorDistance(bottomColorRematch, jasonPortraitColor))
+    return (dRGB < 3)
+
+def IsGameFinished():
+    screenScreenshot = pyautogui.screenshot()
+    s = np.array(screenScreenshot)
+    color = s[gameEndPopup[1]][gameEndPopup[0]]
+    dRGB = ColorDistance(color, gameEndPopupColor)
+    return (dRGB < 3)
+
+def PlayGame():
 
     #FOR TESTING MOUSE INPUT/OUTPUT
     #while True:
@@ -181,13 +217,16 @@ def main():
     #    print(str(x) + ', ' + str(y) + ' color: ' + str(color[0]) + ' ' + str(color[1]) + ' ' + str(color[2]))
     #    time.sleep(0.1)
 
+    InitBoard()
     isJasonWhite = True
-    jasonColor = input("Jason plays Black or White? (B/W): ")
+    #jasonColor = input("Jason plays Black or White? (B/W): ")
+    #if (jasonColor == 'B'):
+    #    isJasonWhite = False
     time.sleep(2.0)
+    isJasonWhite = GetJasonColor()
 
     moves = ""
-    if jasonColor == 'B':
-        isJasonWhite = False
+    if not isJasonWhite:
         #Get opponent move
         opponentMoveString = ""
         while (opponentMoveString == ""):
@@ -199,11 +238,15 @@ def main():
     p = Popen([JasonExe], stdout=PIPE, stdin=PIPE, stderr=PIPE, universal_newlines=True)
 
     isFirstMove = True;
-    while True: #Game loop
+    isGameRunning = True
+    while isGameRunning: #Game loop
+
+        if (IsGameFinished()):
+            return
 
         #add random sleep duration for more humanlike behavior
-        if (~isFirstMove):
-            time.sleep(random.randint(2, 5)) 
+        if (not isFirstMove):
+            time.sleep(random.randint(2, 10)) 
 
         if keyboard.is_pressed('c') and keyboard.is_pressed('ctrl'):
             break #kill keyboard command
@@ -218,24 +261,57 @@ def main():
         bestmove = bestmove.replace("bestmove ", "")
         bestmove = bestmove[0:4]
         [fromCoordinates , toCoordinates] = MoveStringToScreenCoordinates(bestmove)
-        pyautogui.click(fromCoordinates[0], fromCoordinates[1])
-        time.sleep(0.3)
-        pyautogui.click(toCoordinates[0], toCoordinates[1])
+
+        #fast mouse command:
+        #pyautogui.click(fromCoordinates[0], fromCoordinates[1])
+        #pyautogui.click(toCoordinates[0], toCoordinates[1])
+        #random mouse move time and add some noise on square center coordinates (more "humanlike")
+        mouseDragDuration = 0.1 * random.randint(0, 2) #0.1 to 0.2s
+        mouseDragDuration2 = 0.1 * random.randint(0, 2) #0.1 to 0.2s
+        pyautogui.moveTo(fromCoordinates[0] + random.randint(-10, 10), fromCoordinates[1] + random.randint(-10, 10), mouseDragDuration, pyautogui.easeInBounce)
+        pyautogui.click()
+        pyautogui.moveTo(toCoordinates[0] + random.randint(-10, 10), toCoordinates[1] + random.randint(-10, 10), mouseDragDuration2, pyautogui.easeInBounce)
+        pyautogui.click()
 
         #Update piece lists
         UpdatePieceLists(bestmove)
         moves += bestmove + " "
 
+        if (IsGameFinished()):
+            return
+
         #Get opponent move
         opponentMoveString = ""
         while (opponentMoveString == ""):
+
+            if (IsGameFinished()):
+                return
+
             time.sleep(1.0)
             opponentMoveString = GetOpponentMove(isJasonWhite)
+
         UpdatePieceLists(opponentMoveString)
         moves += opponentMoveString + " "
 
         isFirstMove = False
 
+
+def main():
+    
+    #PlayGame()
+    time.sleep(2)
+    #New game loop, should be run from live game screen
+    while True:
+        mouseDragDuration = 0.1 * random.randint(0, 2) #0.1 to 0.2s 
+        pyautogui.moveTo(newGameButton[0] + random.randint(-10, 10), newGameButton[1] + random.randint(-10, 10), mouseDragDuration, pyautogui.easeInBounce)
+        pyautogui.click()
+        time.sleep(10)
+
+        if (not IsGameFinished()):
+            PlayGame()
+
+        time.sleep(10)
+            
 
 if __name__ == "__main__":
     main()
