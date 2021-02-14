@@ -309,8 +309,8 @@ def main():
 
         if (not IsGameFinished()):
             PlayGame()
+            time.sleep(random.randint(60, 120)) #wait 1 to 2 min before next game
 
-        time.sleep(10)
             
 
 if __name__ == "__main__":
