@@ -76,12 +76,6 @@ def ColorDistance(color1, color2):
     dB = (color1[2] - color2[2])
     return math.sqrt(dR*dR + dG*dG + dB*dB)
 
-whitePieces = [[1, 1], [2, 1], [3, 1], [4, 1], [5, 1], [6, 1], [7, 1], [8, 1], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2]]
-blackPieces = [[1, 8], [2, 8], [3, 8], [4, 8], [5, 8], [6, 8], [7, 8], [8, 8], [1, 7], [2, 7], [3, 7], [4, 7], [5, 7], [6, 7], [7, 7], [8, 7]]
-canWhiteOO = True
-canWhiteOOO = True
-canBlackOO = True
-canBlackOOO = True
 
 def InitBoard():
     global whitePieces
@@ -183,10 +177,10 @@ def UpdatePieceLists(moveString):
         blackPieces.append([4, 8])
 
     #Update castle flags (we dont care about rook captures, we just check if king has moved)
-    if fromSq == [5, 1]:
+    if (fromSq[0] == 5 and fromSq[1] == 1):
         canWhiteOO = False
         canWhiteOOO = False
-    if fromSq == [5, 8]:
+    if (fromSq[0] == 5 and fromSq[1] == 8):
         canBlackOO = False
         canBlackOOO = False
 
@@ -251,17 +245,22 @@ def PlayGame():
         if keyboard.is_pressed('c') and keyboard.is_pressed('ctrl'):
             break #kill keyboard command
 
+        #Send uci command
         p.stdin.write("position startpos moves " + moves + '\n')
         p.stdin.write("go wtime 10000 btime 10000\n") #10s max
         p.stdin.flush() 
         bestmove = p.stdout.readline()
         print(bestmove)
         print(p.stdout.readline()) #print move info
-        #Make move with mouse
         bestmove = bestmove.replace("bestmove ", "")
         bestmove = bestmove[0:4]
+
+        if (IsGameFinished()):
+            return #Check again before trying to parse (can be already mated)
+
         [fromCoordinates , toCoordinates] = MoveStringToScreenCoordinates(bestmove)
 
+        #Make move with mouse
         #fast mouse command:
         #pyautogui.click(fromCoordinates[0], fromCoordinates[1])
         #pyautogui.click(toCoordinates[0], toCoordinates[1])
