@@ -12,7 +12,7 @@ import numpy as np
 JasonExe = 'C:\SOURCE\JasonOnline\JasonUCI.exe'
 
 #Chessboard has to be in white point of view!! (for now)
-#Board corners coordinates in chess.com window
+#Board corners coordinates in window
 topLeftCorner = [270, 140]
 bottomLeftCorner = [270, 970]
 topRightCorner = [1105, 140]
@@ -25,11 +25,11 @@ bottomRightCorner = [1105, 970]
 #Square size
 dX = (topRightCorner[0] - topLeftCorner[0]) / 8
 dY = (bottomLeftCorner[1] - topLeftCorner[1]) / 8
-#Chess.com square colors
+#Square colors
 highlightLightSquare = [187, 203, 43] #two different moved pieces colors (according to light or dark square)
 highlightDarkSquare = [247, 247, 105]
 greenSquare = [118, 150,  86]
-#To find Jason's color
+#To find computer's color
 topPortrait = [290, 110]
 topPortraitRematch = [330, 110]
 bottomPortrait = [290, 1000]
@@ -178,9 +178,13 @@ def UpdatePieceLists(moveString):
 
     #Update castle flags (we dont care about rook captures, we just check if king has moved)
     if (fromSq[0] == 5 and fromSq[1] == 1):
+        global canWhiteOO
+        global canWhiteOOO
         canWhiteOO = False
         canWhiteOOO = False
     if (fromSq[0] == 5 and fromSq[1] == 8):
+        global canBlackOO
+        global canBlackOOO
         canBlackOO = False
         canBlackOOO = False
 
@@ -238,14 +242,11 @@ def PlayGame():
         if (IsGameFinished()):
             return
 
-        #add random sleep duration for more humanlike behavior
-        if (not isFirstMove):
-            time.sleep(random.randint(2, 10)) 
-
         if keyboard.is_pressed('c') and keyboard.is_pressed('ctrl'):
             break #kill keyboard command
 
         #Send uci command
+        goStartTime = time.time()
         p.stdin.write("position startpos moves " + moves + '\n')
         p.stdin.write("go wtime 10000 btime 10000\n") #10s max
         p.stdin.flush() 
@@ -254,11 +255,17 @@ def PlayGame():
         print(p.stdout.readline()) #print move info
         bestmove = bestmove.replace("bestmove ", "")
         bestmove = bestmove[0:4]
+        spentTime = time.time() - goStartTime
 
         if (IsGameFinished()):
             return #Check again before trying to parse (can be already mated)
 
         [fromCoordinates , toCoordinates] = MoveStringToScreenCoordinates(bestmove)
+
+        #Add random sleep duration for more humanlike behavior
+        if (not isFirstMove):
+            maxTimeToWait = max(0, 10 - spentTime)
+            time.sleep(random.randint(min(2, maxTimeToWait), maxTimeToWait))
 
         #Make move with mouse
         #fast mouse command:
@@ -308,7 +315,7 @@ def main():
 
         if (not IsGameFinished()):
             PlayGame()
-            time.sleep(random.randint(60, 120)) #wait 1 to 2 min before next game
+            time.sleep(random.randint(20, 60)) #wait 20s to 1 min before next game
 
             
 
