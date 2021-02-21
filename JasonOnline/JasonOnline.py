@@ -258,13 +258,14 @@ def PlayGame():
         spentTime = time.time() - goStartTime
 
         if (IsGameFinished()):
-            return #Check again before trying to parse (can be already mated)
+            return
 
         [fromCoordinates , toCoordinates] = MoveStringToScreenCoordinates(bestmove)
 
         #Add random sleep duration for more humanlike behavior
         if (not isFirstMove):
             maxTimeToWait = max(0, 10 - spentTime)
+            maxTimeToWait = math.floor(maxTimeToWait)
             time.sleep(random.randint(min(2, maxTimeToWait), maxTimeToWait))
 
         #Make move with mouse
