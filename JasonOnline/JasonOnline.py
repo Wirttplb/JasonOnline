@@ -248,11 +248,14 @@ def PlayGame():
         #Send uci command
         goStartTime = time.time()
         p.stdin.write("position startpos moves " + moves + '\n')
-        p.stdin.write("go wtime 10000 btime 10000\n") #10s max
+        p.stdin.write("go movetime 5000\n") #5s max
         p.stdin.flush() 
         bestmove = p.stdout.readline()
         print(bestmove)
         print(p.stdout.readline()) #print move info
+        if (bestmove.find("no move found") > -1):
+            return
+
         bestmove = bestmove.replace("bestmove ", "")
         bestmove = bestmove[0:4]
         spentTime = time.time() - goStartTime
