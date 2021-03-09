@@ -266,8 +266,9 @@ def PlayGame():
         [fromCoordinates , toCoordinates] = MoveStringToScreenCoordinates(bestmove)
 
         #Add random sleep duration for more humanlike behavior
+        maxTimePerMove = 13 #increased from 10
         if (not isFirstMove):
-            maxTimeToWait = max(0, 10 - spentTime)
+            maxTimeToWait = max(0, maxTimePerMove - spentTime)
             maxTimeToWait = math.floor(maxTimeToWait)
             time.sleep(random.randint(min(2, maxTimeToWait), maxTimeToWait))
 
