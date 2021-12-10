@@ -252,10 +252,10 @@ def PlayGame():
         p.stdin.flush() 
         bestmove = p.stdout.readline()
         print(bestmove)
-        print(p.stdout.readline()) #print move info
         if (bestmove.find("no move found") > -1):
             return
 
+        print(p.stdout.readline()) #print move info
         bestmove = bestmove.replace("bestmove ", "")
         bestmove = bestmove[0:4]
         spentTime = time.time() - goStartTime
